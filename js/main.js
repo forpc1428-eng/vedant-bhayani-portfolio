@@ -3,7 +3,13 @@
 //    fall into the black hole → darkness → a galaxy emerges → dive in →
 //    one star becomes the Sun → Neptune … Saturn … Jupiter … Mars → Earth
 // ─────────────────────────────────────────────────────────────────────────────
-import { createBlackHole, smooth, LABELS } from './blackhole.js';
+import { createBlackHole, smooth, LABELS, monotone } from './blackhole.js';
+
+// Scroll pacing of the journey: [scroll fraction, journey progress].
+// The galaxy dive (progress 0–0.42) is quick; the solar system gets most of the scroll.
+const PACE = [[0, 0], [0.06, 0.07], [0.25, 0.42], [0.62, 0.74], [1, 1]];
+const fToU = f => monotone(PACE, f);
+function uToF(u) { let a = 0, b = 1; for (let i = 0; i < 30; i++) { const m = (a + b) / 2; if (fToU(m) < u) a = m; else b = m; } return (a + b) / 2; }
 
 // ── EDIT YOUR CONTENT HERE ───────────────────────────────────────────────────
 const SITE = {
@@ -106,7 +112,7 @@ addEventListener('pointermove', e => {
 }, { passive: true });
 document.addEventListener('mouseleave', () => { ptr.tx = 0; ptr.ty = 0; });
 
-const uToY = u => L.jTop + u * L.jLen;
+const uToY = u => L.jTop + uToF(u) * L.jLen;
 navLinks.forEach((a, i) => a.addEventListener('click', e => {
   e.preventDefault();
   const [a0, a1] = PAGES[i].at;
@@ -122,7 +128,7 @@ function sceneAt(y) {
     return { s: { mode: 'hole', p }, ui: {
       title: 1 - smooth(0, 0.07, p), hud: smooth(0.03, 0.1, p) * (1 - smooth(0.975, 0.995, p)), u: -1 } };
   }
-  const u = clamp01((y - L.jTop) / L.jLen);
+  const u = fToU(clamp01((y - L.jTop) / L.jLen));
   // darkness inside the horizon, then the galaxy slowly appears — no flash
   return { s: { mode: 'space', u, fade: smooth(0.004, 0.05, u) }, ui: { title: 0, hud: 0, u } };
 }

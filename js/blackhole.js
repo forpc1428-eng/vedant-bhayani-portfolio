@@ -57,7 +57,12 @@ export const BODIES = [
 ];
 const PL = BODIES.map(([, d, a, r]) => ({ p: [d * Math.sin(a), 0, d * Math.cos(a)], r }));
 const EARTH = PL[2].p;
-PL.push({ p: add(EARTH, [0.78, 0.10, 0.30]), r: 0.085 });          // the Moon (index 8)
+PL.push({ p: add(EARTH, [0.78, 0.10, 0.30]), r: 0.085 });          // the Moon (index 8), moved every frame
+// Moon orbit around Earth: radius, slight tilt, one lap every ~70 s
+function moonPos(t) {
+  const a = 0.6 + t * 0.09, r = 0.85;
+  return add(EARTH, [Math.cos(a) * r, Math.sin(a) * r * 0.09, Math.sin(a) * r]);
+}
 const PL_UNIFORM = new Float32Array(PL.flatMap(b => [...b.p, b.r]));
 
 // distance from the Sun during the galaxy approach (galaxy units, log-interpolated)
@@ -312,8 +317,6 @@ vec3 universe(vec3 d, float pixAng){
   } else {
     c = stars(d, pixAng, 1.25, band)*1.2*(1.0 - 0.65*sk.a) + sk.rgb;
   }
-  vec4 mn = moon(d, pixAng);
-  c = c*(1.0 - mn.a) + mn.rgb;
   return c + meteors(d, pixAng);
 }
 
@@ -923,7 +926,7 @@ void main(){
 //  CAMERA MATH
 // ═════════════════════════════════════════════════════════════════════════════
 // Fritsch–Carlson monotone cubic (C1, never overshoots, never stalls mid-way)
-function monotone(pts, x) {
+export function monotone(pts, x) {
   const n = pts.length;
   if (x <= pts[0][0]) return pts[0][1];
   if (x >= pts[n - 1][0]) return pts[n - 1][1];
@@ -1272,6 +1275,7 @@ export async function createBlackHole(canvas, opts = {}) {
         // 3D star cells shrink as we zoom in, so there are always stars streaming past
         gl.uniform1f(o.u.uCell, Math.min(3.0, Math.max(0.02, cam.dg * 0.03)));
         gl.uniform3fv(o.u.uEyeG, cam.eyeG); gl.uniform3fv(o.u.uEyeS, cam.eyeS);
+        const mp = moonPos(time); PL_UNIFORM[32] = mp[0]; PL_UNIFORM[33] = mp[1]; PL_UNIFORM[34] = mp[2];
         gl.uniform4fv(o.u.uPl, PL_UNIFORM);
         setBasis(o, B, Math.tan(cam.fov / 2));
         gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_CUBE_MAP, SKY_DEEP); gl.uniform1i(o.u.uSky, 1);

@@ -53,7 +53,7 @@ main{position:relative;z-index:1}
 .rail i{position:absolute;inset:0;background:var(--fg);transform-origin:top;transform:scaleY(0)}
 
 /* ── intro ────────────────────────────────────────────── */
-#hole{height:620vh}
+#hole{height:400vh}
 .hero{position:absolute;left:var(--pad);bottom:clamp(90px,16vh,180px);max-width:min(90vw,820px);
   opacity:var(--title);transform:translate3d(0,calc((1 - var(--title))*-40px),0)}
 .kicker{font:500 11px/1 var(--sans);letter-spacing:.38em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
@@ -70,7 +70,7 @@ main{position:relative;z-index:1}
 @keyframes hint{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}50.1%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 
 /* ── the journey (galaxy → solar system) ──────────────── */
-#journey{height:2400vh}
+#journey{height:2800vh}
 .pages{position:fixed;inset:0;z-index:4;pointer-events:none}
 .panel{position:absolute;left:var(--pad);top:50%;width:min(88vw,520px);--o:0;
   transform:translate3d(0,calc(-50% + (1 - var(--o))*28px),0);opacity:var(--o);pointer-events:none}
@@ -123,8 +123,8 @@ main{position:relative;z-index:1}
 
 /* ══ DEDICATED MOBILE LAYOUT (html.mobile is set by JS on phones/tablets) ══ */
 html.mobile{--pad:20px}
-html.mobile #hole{height:480vh}
-html.mobile #journey{height:1900vh}
+html.mobile #hole{height:320vh}
+html.mobile #journey{height:2300vh}
 html.mobile .menu{display:block}
 html.mobile .nav{position:fixed;inset:0;z-index:-1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 var(--pad);
   background:rgba(0,0,0,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
