@@ -1,0 +1,157 @@
+@font-face{font-family:"Montserrat";font-weight:400;font-display:swap;src:url(../fonts/montserrat-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Montserrat";font-weight:500;font-display:swap;src:url(../fonts/montserrat-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Bodoni Moda";font-weight:400;font-display:swap;src:url(../fonts/bodoni-moda-latin-400-normal.woff2) format("woff2")}
+
+:root{
+  --bg:#000;
+  --fg:#f4efe8;
+  --dim:rgba(244,239,232,.62);
+  --faint:rgba(244,239,232,.18);
+  --hot:#ffb070;
+  --accent:var(--hot);
+  --serif:"Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
+  --sans:"Montserrat","Helvetica Neue",Arial,sans-serif;
+  --e-out:cubic-bezier(.16,1,.3,1);
+  --title:1; --hud:0; --load:0;
+  --pad:clamp(16px,5vw,80px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);color:var(--fg);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;scrollbar-width:none}
+html::-webkit-scrollbar{display:none}
+body{background:var(--bg);overflow-x:hidden;font-family:var(--sans)}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--accent);color:#000}
+
+/* ── fixed backdrop ───────────────────────────────────── */
+.stage{position:fixed;inset:0;z-index:0;contain:strict}
+#bh{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(rgba(0,0,0,.42),rgba(0,0,0,0) 16%,rgba(0,0,0,0) 70%,rgba(0,0,0,.5))}
+main{position:relative;z-index:1}
+.sticky{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+
+/* ── chrome ───────────────────────────────────────────── */
+.top{position:fixed;z-index:5;top:clamp(18px,4vh,40px);left:var(--pad);right:var(--pad);
+  display:flex;justify-content:space-between;align-items:center;font:500 11px/1 var(--sans);letter-spacing:.32em;text-transform:uppercase;
+  opacity:0;transform:translateY(-8px);transition:opacity 1.4s var(--e-out) .3s,transform 1.4s var(--e-out) .3s}
+.ready .top{opacity:1;transform:none}
+.nav{display:flex;gap:clamp(14px,2.4vw,34px)}
+.nav a{color:var(--dim);transition:color .4s;position:relative;padding:6px 0}
+.nav a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .6s var(--e-out)}
+.nav a:hover,.nav a.on{color:var(--fg)}
+.nav a.on::after{transform:none}
+
+.hud{position:fixed;z-index:5;left:var(--pad);bottom:clamp(20px,5vh,48px);display:grid;gap:8px;
+  font:500 10px/1 var(--sans);letter-spacing:.24em;text-transform:uppercase;opacity:var(--hud);pointer-events:none}
+.hud div{display:flex;gap:18px;align-items:baseline}
+.hud .k{color:var(--dim);width:9.5em}
+.hud b{font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.08em}
+.hud sub{font-size:.8em;vertical-align:baseline;text-transform:none;letter-spacing:0}
+
+
+.rail{position:fixed;z-index:5;right:clamp(16px,3vw,40px);top:50%;width:1px;height:22vh;transform:translateY(-50%);background:var(--faint)}
+.rail i{position:absolute;inset:0;background:var(--fg);transform-origin:top;transform:scaleY(0)}
+
+/* ── intro ────────────────────────────────────────────── */
+#hole{height:620vh}
+.hero{position:absolute;left:var(--pad);bottom:clamp(90px,16vh,180px);max-width:min(90vw,820px);
+  opacity:var(--title);transform:translate3d(0,calc((1 - var(--title))*-40px),0)}
+.kicker{font:500 11px/1 var(--sans);letter-spacing:.38em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
+.title{font:400 clamp(44px,9vw,148px)/.92 var(--serif);letter-spacing:-.02em}
+.sub{margin-top:22px;font:400 13px/1.6 var(--sans);color:var(--dim);letter-spacing:.04em}
+.hero>*{opacity:0;transform:translateY(24px);transition:opacity 1.6s var(--e-out),transform 1.6s var(--e-out)}
+.ready .hero>*{opacity:1;transform:none}
+.ready .hero .title{transition-delay:.12s}
+.ready .hero .sub{transition-delay:.3s}
+
+.hint{position:absolute;left:50%;bottom:4.5vh;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;
+  font:500 10px/1 var(--sans);letter-spacing:.32em;text-transform:uppercase;color:var(--dim);opacity:calc(var(--title)*var(--title))}
+.hint i{width:1px;height:38px;background:linear-gradient(#fff0,#fffa);animation:hint 2.2s cubic-bezier(.87,0,.13,1) infinite}
+@keyframes hint{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}50.1%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ── the journey (galaxy → solar system) ──────────────── */
+#journey{height:2400vh}
+.pages{position:fixed;inset:0;z-index:4;pointer-events:none}
+.panel{position:absolute;left:var(--pad);top:50%;width:min(88vw,520px);--o:0;
+  transform:translate3d(0,calc(-50% + (1 - var(--o))*28px),0);opacity:var(--o);pointer-events:none}
+.panel.live{pointer-events:auto}
+.panel.right{left:auto;right:var(--pad)}
+.panel::before{content:"";position:absolute;inset:-40px -48px;z-index:-1;border-radius:32px;
+  background:radial-gradient(closest-side,rgba(0,0,0,.5),rgba(0,0,0,0))}
+.panel .kicker{color:var(--accent)}
+.panel h2{font:400 clamp(38px,5.4vw,84px)/.98 var(--serif);letter-spacing:-.02em;margin-bottom:22px}
+.panel h2 em{color:var(--dim)}
+.panel p.body{font:400 15px/1.75 var(--sans);color:var(--dim);max-width:46ch}
+.panel ul{list-style:none;margin-top:28px;border-top:1px solid var(--faint)}
+.panel li{display:flex;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:1px solid var(--faint);
+  font:400 clamp(17px,1.6vw,22px)/1.2 var(--serif);transition:padding .5s var(--e-out),color .4s}
+.panel li span{font:500 10px/1.8 var(--sans);letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+.panel li:hover{padding-left:10px;color:var(--accent)}
+.panel .mail{display:inline-block;margin-top:30px;font:400 clamp(20px,2.4vw,34px)/1 var(--serif);border-bottom:1px solid var(--faint);padding-bottom:6px;transition:border-color .4s,color .4s}
+.panel .mail:hover{color:var(--accent);border-color:var(--accent)}
+.panel .foot{margin-top:36px;font:500 10px/1 var(--sans);letter-spacing:.32em;text-transform:uppercase;color:var(--dim)}
+
+.bodytag{position:fixed;z-index:5;left:var(--pad);bottom:clamp(20px,5vh,48px);display:flex;gap:18px;align-items:baseline;
+  font:500 10px/1 var(--sans);letter-spacing:.3em;text-transform:uppercase;opacity:var(--bt,0);pointer-events:none;transition:opacity .2s}
+.bodytag b{font-weight:500;color:var(--fg)}
+.bodytag span{color:var(--dim)}
+
+.gl-error{display:none}
+.no-gl .gl-error{display:block;position:fixed;z-index:6;inset:auto 0 45% 0;text-align:center;color:var(--dim);font:400 13px/1.6 var(--sans);padding:0 16px}
+
+@media (max-width:760px){
+  .nav{display:none}
+  .hud .k{width:8em}
+  .panel,.panel.right{left:var(--pad);right:var(--pad);width:auto;top:auto;bottom:11vh;transform:translate3d(0,calc((1 - var(--o))*28px),0)}
+  .panel p.body{font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){
+  .hint i{animation:none;transform:none}
+}
+.panel .credit{margin-top:14px;font:400 10px/1.5 var(--sans);letter-spacing:.06em;color:rgba(244,239,232,.38)}
+.panel .credit a{border-bottom:1px solid var(--faint)}
+
+/* ── name as two lines in the hero ───────────────────── */
+.title span{display:inline-block}
+
+/* ── menu button (phones) ────────────────────────────── */
+.menu{display:none;width:40px;height:40px;margin:-10px -10px -10px 0;background:none;border:0;padding:0;cursor:pointer;position:relative}
+.menu i{position:absolute;left:10px;right:10px;height:1px;background:var(--fg);transition:transform .5s var(--e-out)}
+.menu i:first-child{top:16px}.menu i:last-child{top:23px}
+.menu-open .menu i:first-child{transform:translateY(3.5px) rotate(45deg)}
+.menu-open .menu i:last-child{transform:translateY(-3.5px) rotate(-45deg)}
+
+/* ══ DEDICATED MOBILE LAYOUT (html.mobile is set by JS on phones/tablets) ══ */
+html.mobile{--pad:20px}
+html.mobile #hole{height:480vh}
+html.mobile #journey{height:1900vh}
+html.mobile .menu{display:block}
+html.mobile .nav{position:fixed;inset:0;z-index:-1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 var(--pad);
+  background:rgba(0,0,0,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  opacity:0;visibility:hidden;transition:opacity .5s var(--e-out),visibility .5s}
+html.mobile.menu-open .nav{opacity:1;visibility:visible}
+html.mobile .nav a{font:400 44px/1.15 var(--serif);letter-spacing:-.01em;text-transform:none;color:var(--fg);padding:6px 0}
+html.mobile .nav a::after{display:none}
+html.mobile .nav a.on{color:var(--accent)}
+html.mobile .top{top:max(14px,env(safe-area-inset-top));font-size:10px}
+html.mobile .hero{left:var(--pad);right:var(--pad);bottom:calc(96px + env(safe-area-inset-bottom))}
+html.mobile .title{font-size:clamp(46px,15vw,84px);line-height:.9}
+html.mobile .title span{display:block}
+html.mobile .sub{font-size:12px}
+html.mobile .rail{display:none}
+html.mobile .hud,html.mobile .bodytag{bottom:calc(18px + env(safe-area-inset-bottom))}
+html.mobile .hud .k{width:8em}
+/* text panels become a bottom sheet so the planet stays visible above */
+html.mobile .panel,html.mobile .panel.right{left:0;right:0;top:auto;bottom:0;width:auto;max-height:60vh;overflow:auto;
+  padding:42px var(--pad) calc(54px + env(safe-area-inset-bottom));
+  transform:translate3d(0,calc((1 - var(--o))*24px),0);
+  background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.72) 26%,rgba(0,0,0,.9))}
+html.mobile .panel::before{display:none}
+html.mobile .panel h2{font-size:clamp(34px,10vw,52px);margin-bottom:14px}
+html.mobile .panel p.body{font-size:14px;line-height:1.65}
+html.mobile .panel ul{margin-top:18px}
+html.mobile .panel li{padding:12px 0;font-size:17px}
+html.mobile .panel .mail{font-size:22px;margin-top:20px}
+html.mobile .panel .foot{margin-top:22px}
+html.mobile .bodytag span{display:none}
+html.mobile .hint{display:none}

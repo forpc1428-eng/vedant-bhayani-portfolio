@@ -1,0 +1,239 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  MAIN — one scroll timeline, no cuts:
+//    fall into the black hole → darkness → a galaxy emerges → dive in →
+//    one star becomes the Sun → Neptune … Saturn … Jupiter … Mars → Earth
+// ─────────────────────────────────────────────────────────────────────────────
+import { createBlackHole, smooth, LABELS } from './blackhole.js';
+
+// ── EDIT YOUR CONTENT HERE ───────────────────────────────────────────────────
+const SITE = {
+  name: 'Vedant Bhayani',
+  email: 'your.email@example.com',      // ← put your real email here
+};
+// Each page appears at a point of the journey: [from, to] in journey progress 0..1.
+// side = where the text sits (the scene is framed on the other side).
+const PAGES = [
+  { nav: 'About', at: [0.035, 0.20], side: 'left', kicker: 'About',
+    title: 'Where ideas<br><em>are born.</em>',
+    body: 'I design and build digital experiences at the edge of art and engineering: interactive sites, real-time graphics and products people remember.' },
+  { nav: 'Work', at: [0.575, 0.655], side: 'right', kicker: 'Selected work',
+    title: 'Things I’ve<br><em>launched.</em>',
+    list: [['Project One', 'Web · 2026'], ['Project Two', 'WebGL · 2025'], ['Project Three', 'Brand · 2025'], ['Project Four', 'App · 2024']] },
+  { nav: 'Lab', at: [0.70, 0.765], side: 'left', kicker: 'Lab',
+    title: 'Experiments<br><em>& craft.</em>',
+    body: 'Shaders, simulations and small worlds made for curiosity. Tools I live in:',
+    list: [['WebGL / GLSL', 'Graphics'], ['React · Three.js', 'Front-end'], ['Motion design', 'Interaction']] },
+  { nav: 'Contact', at: [0.905, 1.01], side: 'right', kicker: 'Contact · Home',
+    title: 'Every journey<br><em>ends at home.</em>',
+    body: 'Have a project in mind? Let’s make something that bends a little light.',
+    contact: true },
+];
+// ─────────────────────────────────────────────────────────────────────────────
+
+const $ = s => document.querySelector(s);
+const qs = new URLSearchParams(location.search);
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const quality = qs.get('q') || 'auto';
+const root = document.documentElement;
+const css = (k, v) => root.style.setProperty(k, v);
+// Dedicated phone/tablet profile: small WebP textures, lighter rendering,
+// portrait framing (planet above, text below), shorter scroll, menu sheet.
+// Force with ?m=1 / ?m=0.
+const MOBILE = qs.get('m') === '1' || (qs.get('m') !== '0' &&
+  (matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600));
+root.classList.toggle('mobile', MOBILE);
+
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+scrollTo(0, 0);
+
+// ── build DOM
+document.querySelectorAll('[data-name]').forEach(el => el.textContent = SITE.name);
+document.querySelectorAll('[data-name-lines]').forEach(el => el.innerHTML = SITE.name.split(' ').map(w => `<span>${w}</span>`).join(' '));
+document.title = `${SITE.name} — Portfolio`;
+const pagesEl = $('#pages');
+const panels = PAGES.map(pg => {
+  const el = document.createElement('article');
+  el.className = 'panel' + (pg.side === 'right' ? ' right' : '');
+  el.id = pg.nav.toLowerCase();
+  const list = pg.list ? `<ul>${pg.list.map(([a, b]) => `<li>${a}<span>${b}</span></li>`).join('')}</ul>` : '';
+  const contact = pg.contact
+    ? `<a class="mail" href="mailto:${SITE.email}">${SITE.email}</a><p class="foot">${SITE.name} · © ${new Date().getFullYear()}</p>
+       <p class="credit">Planet &amp; Milky Way imagery: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope</a>, CC BY 4.0</p>` : '';
+  el.innerHTML = `<p class="kicker">${pg.kicker}</p><h2>${pg.title}</h2>${pg.body ? `<p class="body">${pg.body}</p>` : ''}${list}${contact}`;
+  pagesEl.appendChild(el);
+  return el;
+});
+const nav = $('#nav');
+nav.innerHTML = PAGES.map((pg, i) => `<a href="#${pg.nav.toLowerCase()}" data-i="${i}">${pg.nav}</a>`).join('');
+const navLinks = [...nav.querySelectorAll('a')];
+const menuBtn = $('#menuBtn');
+menuBtn.addEventListener('click', () => root.classList.toggle('menu-open'));
+navLinks.forEach(a => a.addEventListener('click', () => root.classList.remove('menu-open')));
+
+const loader = $('#loader'), canvas = $('#bh');
+const hudDist = $('#hudDist'), hudTime = $('#hudTime'), hudBar = $('#hudBar');
+const btName = $('#btName'), btInfo = $('#btInfo');
+const holeSec = $('#hole'), journeySec = $('#journey');
+
+// ── layout cache (never read layout inside the frame loop)
+let L = {};
+function measure() {
+  L = {
+    hole: { top: holeSec.offsetTop, len: Math.max(1, holeSec.offsetHeight - innerHeight) },
+    // the journey starts the moment the fall ends, so the black frames line up exactly
+    jTop: holeSec.offsetTop + holeSec.offsetHeight - innerHeight,
+    jLen: Math.max(1, journeySec.offsetHeight),
+    max: Math.max(1, document.documentElement.scrollHeight - innerHeight), vh: innerHeight,
+  };
+}
+measure();
+
+// ── critically-damped spring on scroll position (px)
+const spring = { x: 0, v: 0, w: reducedMotion ? 14 : 6.5 };
+function stepSpring(target, dt) {
+  const n = Math.ceil(dt / (1 / 120)), h = dt / n;
+  for (let i = 0; i < n; i++) {
+    const a = spring.w * spring.w * (target - spring.x) - 2 * spring.w * spring.v;
+    spring.v += a * h; spring.x += spring.v * h;
+  }
+  if (Math.abs(target - spring.x) < 0.05 && Math.abs(spring.v) < 0.05) { spring.x = target; spring.v = 0; }
+}
+
+const ptr = { tx: 0, ty: 0, x: 0, y: 0 };
+addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
+  ptr.tx = (e.clientX / innerWidth) * 2 - 1; ptr.ty = (e.clientY / innerHeight) * 2 - 1;
+}, { passive: true });
+document.addEventListener('mouseleave', () => { ptr.tx = 0; ptr.ty = 0; });
+
+const uToY = u => L.jTop + u * L.jLen;
+navLinks.forEach((a, i) => a.addEventListener('click', e => {
+  e.preventDefault();
+  const [a0, a1] = PAGES[i].at;
+  scrollTo({ top: uToY(Math.min(1, (a0 + Math.min(a1, 1)) / 2)), behavior: 'smooth' });
+}));
+$('.brand').addEventListener('click', e => { e.preventDefault(); scrollTo({ top: 0, behavior: 'smooth' }); });
+
+// ── smoothed scroll → scene + UI
+const clamp01 = x => Math.min(1, Math.max(0, x));
+function sceneAt(y) {
+  if (y < L.jTop) {
+    const p = clamp01((y - L.hole.top) / L.hole.len);
+    return { s: { mode: 'hole', p }, ui: {
+      title: 1 - smooth(0, 0.07, p), hud: smooth(0.03, 0.1, p) * (1 - smooth(0.975, 0.995, p)), u: -1 } };
+  }
+  const u = clamp01((y - L.jTop) / L.jLen);
+  // darkness inside the horizon, then the galaxy slowly appears — no flash
+  return { s: { mode: 'space', u, fade: smooth(0.004, 0.05, u) }, ui: { title: 0, hud: 0, u } };
+}
+
+// ── boot
+let engine = null;
+// loader: 0–60% = shaders compiling, 60–100% = landing sky + Moon photos
+const ldPct = $('#ldPct');
+let loadShown = 0;
+const setLoad = p => {
+  loadShown = Math.max(loadShown, Math.min(1, p));
+  css('--load', loadShown.toFixed(3));
+  if (ldPct) ldPct.textContent = String(Math.round(loadShown * 100)).padStart(2, '0');
+};
+setLoad(0.06);
+let fakeT = setInterval(() => setLoad(loadShown + (0.55 - loadShown) * 0.08), 120);   // eases toward 55% while compiling
+(async () => {
+  try {
+    engine = await createBlackHole(canvas, {
+      mobile: MOBILE,
+      maxDpr: quality === 'high' ? 2 : quality === 'low' ? 1 : MOBILE ? 1.25 : 1.5,
+      maxPixels: quality === 'high' ? 5e6 : MOBILE ? 1.0e6 : 3.2e6,
+      steps: quality === 'low' ? 150 : quality === 'high' ? 300 : MOBILE ? 150 : 220,
+      reducedMotion,
+      onProgress: (f, key) => { if (key === 'tPano' || key === 'tMoon') setLoad(0.6 + 0.2 * ((engine?.hasPano() ? 1 : 0) + (key === 'tMoon' ? 1 : 0))); },
+    });
+  } catch (e) {
+    console.error(e);
+    root.classList.add('no-gl');
+    $('#glError').textContent = e.message;
+    setLoad(1); finish(); return;
+  }
+  clearInterval(fakeT);
+  if (qs.has('debug')) window.__bh = engine;
+  setLoad(0.6);
+  for (let i = 0; i < 3; i++) engine.render(1 / 60, { mode: 'hole', p: 0 });
+  engine.gl.finish();
+  engine.spaceReady.then(() => { warmSpace = true; }).catch(e => console.error(e));
+  // reveal once the real sky has arrived (or after 3.5 s at most, so nothing ever hangs)
+  const t0 = performance.now();
+  (function waitSky() {
+    if (engine.hasPano() || performance.now() - t0 > 3500) {
+      engine.render(1 / 60, { mode: 'hole', p: 0 }); engine.render(1 / 60, { mode: 'hole', p: 0 });
+      setLoad(1); setTimeout(finish, 350); requestAnimationFrame(loop);
+    } else { engine.render(1 / 60, { mode: 'hole', p: 0 }); setTimeout(waitSky, 50); }
+  })();
+})();
+function finish() { clearInterval(fakeT); loader.classList.add('done'); root.classList.add('ready'); }
+
+// ── frame loop
+let warmSpace = false;
+let last = performance.now(), running = true, hudT = 0, shownPage = -2, shownLabel = '';
+function loop(now) {
+  if (!running) return;
+  const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)); last = now;
+  stepSpring(scrollY, dt);
+  const k = 1 - Math.exp(-dt * 4);
+  ptr.x += (ptr.tx - ptr.x) * k; ptr.y += (ptr.ty - ptr.y) * k;
+
+  if (warmSpace) { warmSpace = false; engine.render(0, { mode: 'space', u: 0.5, fade: 1 }); }  // prime the GPU pipeline
+  const { s, ui } = sceneAt(spring.x);
+  s.velocity = spring.v / L.vh; s.pointer = [ptr.x, ptr.y];
+  const out = engine.render(dt, s);
+  engine.adapt(dt);
+
+  hudT += dt;
+  if (hudT > 0.066 && s.mode === 'hole') {
+    hudT = 0;
+    hudDist.textContent = out.distance.toFixed(2);
+    hudTime.textContent = out.inside ? '0 · inside' : out.dilation.toFixed(4);
+  }
+  css('--title', ui.title.toFixed(3)); css('--hud', ui.hud.toFixed(3));
+
+  // pages + labels
+  let active = -1;
+  panels.forEach((el, i) => {
+    const [a0, a1] = PAGES[i].at;
+    const o = ui.u < 0 ? 0 : smooth(a0, a0 + 0.02, ui.u) * (1 - smooth(a1 - 0.015, a1, ui.u));
+    el.style.setProperty('--o', o.toFixed(3));
+    el.classList.toggle('live', o > 0.5);
+    if (o > 0.5) active = i;
+  });
+  if (active !== shownPage) { shownPage = active; navLinks.forEach((a, i) => a.classList.toggle('on', i === active)); }
+  let lab = null, bt = 0;
+  if (ui.u >= 0) for (const l of LABELS) if (ui.u >= l[0] && ui.u < l[1]) {
+    lab = l; bt = smooth(l[0], l[0] + 0.008, ui.u) * (1 - smooth(l[1] - 0.008, l[1], ui.u)); break;
+  }
+  if (lab && lab[2] !== shownLabel) { shownLabel = lab[2]; btName.textContent = lab[2]; btInfo.textContent = lab[3]; }
+  css('--bt', (bt * (active >= 0 ? 0.6 : 1)).toFixed(3));
+  hudBar.style.transform = `scaleY(${clamp01(spring.x / L.max).toFixed(4)})`;
+  requestAnimationFrame(loop);
+}
+
+// ── lifecycle
+document.addEventListener('visibilitychange', () => {
+  running = !document.hidden;
+  if (running && engine) { last = performance.now(); requestAnimationFrame(loop); }
+});
+let rzT;
+new ResizeObserver(() => {
+  clearTimeout(rzT);
+  rzT = setTimeout(() => { measure(); engine?.resize(); }, 120);
+}).observe(document.body);
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); running = false; });
+canvas.addEventListener('webglcontextrestored', () => location.reload());
+
+// debug: ?u=0.6 jumps to that point of the journey, ?at=0.5 to a fraction of the page
+if (qs.has('u') || qs.has('at')) {
+  requestAnimationFrame(() => {
+    measure();
+    const y = qs.has('u') ? uToY(+qs.get('u')) : +qs.get('at') * L.max;
+    scrollTo(0, y); spring.x = y;
+  });
+}

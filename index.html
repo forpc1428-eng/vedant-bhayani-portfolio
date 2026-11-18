@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
+<title>Vedant Bhayani — Portfolio</title>
+<meta name="description" content="Vedant Bhayani — portfolio. Fall into a black hole, cross the galaxy and arrive home.">
+<meta property="og:title" content="Vedant Bhayani — Portfolio">
+<meta property="og:description" content="Fall into a black hole, cross the galaxy and arrive home.">
+<meta property="og:type" content="website">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23000'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='4' fill='none' stroke='%23ffb070' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23000' stroke='%23ffd9a8' stroke-width='1.2'/%3E%3C/svg%3E">
+<link rel="modulepreload" href="js/blackhole.js">
+<link rel="modulepreload" href="js/main.js">
+<link rel="preload" href="fonts/bodoni-moda-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/montserrat-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* critical: the loader paints on the very first frame, before anything else loads */
+@font-face{font-family:"Bodoni Moda";font-weight:400;font-display:swap;src:url(fonts/bodoni-moda-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Montserrat";font-weight:500;font-display:swap;src:url(fonts/montserrat-latin-500-normal.woff2) format("woff2")}
+html,body{margin:0;background:#000}
+#loader{position:fixed;inset:0;z-index:50;background:#000;color:#f4efe8;display:grid;place-items:center;
+  transition:opacity 1.1s cubic-bezier(.16,1,.3,1),visibility 1.1s}
+#loader.done{opacity:0;visibility:hidden}
+.ld{display:grid;justify-items:center;gap:26px;width:min(86vw,560px)}
+.ld-orbit{width:64px;height:64px;position:relative}
+.ld-orbit::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from -90deg,#ffb070 calc(var(--load,0)*360deg),rgba(244,239,232,.12) 0);
+  -webkit-mask:radial-gradient(farthest-side,#0000 calc(100% - 1.5px),#000 calc(100% - 1px));mask:radial-gradient(farthest-side,#0000 calc(100% - 1.5px),#000 calc(100% - 1px))}
+.ld-orbit::after{content:"";position:absolute;inset:22px;border-radius:50%;background:#000;
+  box-shadow:0 0 0 1px rgba(255,200,150,.55),0 0 24px 4px rgba(255,150,80,calc(.12 + var(--load,0)*.35))}
+.ld-name{font:400 clamp(30px,7vw,64px)/1 "Bodoni Moda",Georgia,serif;letter-spacing:-.01em;text-align:center;margin:0}
+.ld-name span{display:inline-block;opacity:0;transform:translateY(14px);animation:ldIn 1.2s cubic-bezier(.16,1,.3,1) forwards}
+.ld-name span:nth-child(2){animation-delay:.12s}
+.ld-meta{display:flex;justify-content:space-between;width:100%;font:500 10px/1 Montserrat,Arial,sans-serif;letter-spacing:.34em;text-transform:uppercase;color:rgba(244,239,232,.5)}
+.ld-bar{width:100%;height:1px;background:rgba(244,239,232,.14);overflow:hidden}
+.ld-bar i{display:block;height:100%;background:#f4efe8;transform-origin:left;transform:scaleX(var(--load,0));transition:transform .3s}
+@keyframes ldIn{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ld-name span{animation:none;opacity:1;transform:none}}
+</style>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="loader" aria-hidden="true">
+  <div class="ld">
+    <div class="ld-orbit"></div>
+    <p class="ld-name"><span>Vedant</span> <span>Bhayani</span></p>
+    <div class="ld-bar"><i></i></div>
+    <div class="ld-meta"><span>Bending light</span><span><b id="ldPct">00</b>%</span></div>
+  </div>
+</div>
+
+<!-- fixed WebGL backdrop + chrome -->
+<div class="stage" aria-hidden="true"><canvas id="bh"></canvas></div>
+<header class="top">
+  <a class="brand" href="#hole" data-name>Vedant Bhayani</a>
+  <nav class="nav" id="nav"></nav>
+  <button class="menu" id="menuBtn" aria-label="Menu"><i></i><i></i></button>
+</header>
+<aside class="hud" aria-hidden="true">
+  <div><span class="k">Distance</span><span class="v"><b id="hudDist">64.00</b> r<sub>s</sub></span></div>
+  <div><span class="k">Clock rate</span><span class="v">×<b id="hudTime">0.9917</b></span></div>
+</aside>
+<div class="bodytag" aria-hidden="true"><b id="btName"></b><span id="btInfo"></span></div>
+<div class="rail" aria-hidden="true"><i id="hudBar"></i></div>
+<div class="pages" id="pages"></div>
+<p id="glError" class="gl-error"></p>
+
+<main>
+  <section id="hole" aria-label="Intro">
+    <div class="sticky">
+      <div class="hero">
+        <p class="kicker">Portfolio</p>
+        <h1 class="title" data-name-lines>Vedant Bhayani</h1>
+        <p class="sub">Scroll to cross the event horizon</p>
+      </div>
+      <div class="hint" aria-hidden="true"><span>Scroll</span><i></i></div>
+    </div>
+  </section>
+  <section id="journey" aria-label="Journey"></section>
+</main>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
