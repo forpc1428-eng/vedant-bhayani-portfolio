@@ -14,24 +14,25 @@ function uToF(u) { let a = 0, b = 1; for (let i = 0; i < 30; i++) { const m = (a
 // ── EDIT YOUR CONTENT HERE ───────────────────────────────────────────────────
 const SITE = {
   name: 'Vedant Bhayani',
-  email: 'your.email@example.com',      // ← put your real email here
+  email: 'vedantbhayani00@gmail.com',
+  role: 'Creative Developer · Web · App · Software',
 };
 // Each page appears at a point of the journey: [from, to] in journey progress 0..1.
 // side = where the text sits (the scene is framed on the other side).
 const PAGES = [
   { nav: 'About', at: [0.035, 0.20], side: 'left', kicker: 'About',
     title: 'Where ideas<br><em>are born.</em>',
-    body: 'I design and build digital experiences at the edge of art and engineering: interactive sites, real-time graphics and products people remember.' },
+    body: 'I’m Vedant, a creative developer. I design and build websites, apps and software that feel alive: fast, beautiful and made to be remembered.' },
   { nav: 'Work', at: [0.575, 0.655], side: 'right', kicker: 'Selected work',
-    title: 'Things I’ve<br><em>launched.</em>',
-    list: [['Project One', 'Web · 2026'], ['Project Two', 'WebGL · 2025'], ['Project Three', 'Brand · 2025'], ['Project Four', 'App · 2024']] },
+    title: 'Things I’ve<br><em>created.</em>',
+    list: [['Project One', 'Website · 2026'], ['Project Two', 'App · 2025'], ['Project Three', 'Software · 2025'], ['Project Four', 'Web app · 2024']] },
   { nav: 'Lab', at: [0.70, 0.765], side: 'left', kicker: 'Lab',
     title: 'Experiments<br><em>& craft.</em>',
-    body: 'Shaders, simulations and small worlds made for curiosity. Tools I live in:',
-    list: [['WebGL / GLSL', 'Graphics'], ['React · Three.js', 'Front-end'], ['Motion design', 'Interaction']] },
+    body: 'Where I experiment. What I build with:',
+    list: [['Websites', 'Creative web'], ['Mobile & web apps', 'Apps'], ['Software & tools', 'Software'], ['3D · WebGL · motion', 'Interactive']] },
   { nav: 'Contact', at: [0.905, 1.01], side: 'right', kicker: 'Contact · Home',
     title: 'Every journey<br><em>ends at home.</em>',
-    body: 'Have a project in mind? Let’s make something that bends a little light.',
+    body: 'Have a website, app or software idea? Let’s build something that bends a little light.',
     contact: true },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,8 +55,9 @@ scrollTo(0, 0);
 
 // ── build DOM
 document.querySelectorAll('[data-name]').forEach(el => el.textContent = SITE.name);
+document.querySelectorAll('[data-role]').forEach(el => el.textContent = SITE.role);
 document.querySelectorAll('[data-name-lines]').forEach(el => el.innerHTML = SITE.name.split(' ').map(w => `<span>${w}</span>`).join(' '));
-document.title = `${SITE.name} — Portfolio`;
+document.title = `${SITE.name} — Creative Developer`;
 const pagesEl = $('#pages');
 const panels = PAGES.map(pg => {
   const el = document.createElement('article');
