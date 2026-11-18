@@ -7,7 +7,7 @@ import { createBlackHole, smooth, LABELS, monotone } from './blackhole.js';
 
 // Scroll pacing of the journey: [scroll fraction, journey progress].
 // The galaxy dive (progress 0–0.42) is quick; the solar system gets most of the scroll.
-const PACE = [[0, 0], [0.06, 0.07], [0.25, 0.42], [0.62, 0.74], [1, 1]];
+const PACE = [[0, 0], [0.06, 0.07], [0.16, 0.29], [0.34, 0.47], [0.64, 0.75], [1, 1]];
 const fToU = f => monotone(PACE, f);
 function uToF(u) { let a = 0, b = 1; for (let i = 0; i < 30; i++) { const m = (a + b) / 2; if (fToU(m) < u) a = m; else b = m; } return (a + b) / 2; }
 
@@ -192,7 +192,7 @@ function loop(now) {
 
   if (warmSpace) { warmSpace = false; engine.render(0, { mode: 'space', u: 0.5, fade: 1 }); }  // prime the GPU pipeline
   const { s, ui } = sceneAt(spring.x);
-  s.velocity = spring.v / L.vh; s.pointer = [ptr.x, ptr.y];
+  s.velocity = spring.v / L.vh; s.pointer = MOBILE ? [0, 0] : [ptr.x, ptr.y];   // no mouse look-around on phones
   const out = engine.render(dt, s);
   engine.adapt(dt);
 

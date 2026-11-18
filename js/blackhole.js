@@ -66,8 +66,8 @@ function moonPos(t) {
 const PL_UNIFORM = new Float32Array(PL.flatMap(b => [...b.p, b.r]));
 
 // distance from the Sun during the galaxy approach (galaxy units, log-interpolated)
-const DG = [[0, 330], [0.08, 280], [0.16, 190], [0.24, 70], [0.30, 9], [0.33, 1.2], [0.36, 0.08],
-            [0.385, 0.008], [0.405, 0.0028], [0.42, 0.0016]].map(([u, d]) => [u, Math.log(d)]);
+const DG = [[0, 240], [0.08, 205], [0.16, 150], [0.24, 70], [0.28, 18], [0.315, 3.5], [0.35, 0.5],
+            [0.38, 0.05], [0.40, 0.008], [0.42, 0.0016]].map(([u, d]) => [u, Math.log(d)]);
 export const U_HAND = 0.42;                     // galaxy frame → system frame
 
 // Camera beside a planet. The Sun lights it from the side (like real spacecraft
@@ -76,14 +76,20 @@ export const U_HAND = 0.42;                     // galaxy frame → system frame
 // Mobile (portrait): planet in the upper part of the screen, text below.
 let MOBILE = false;
 function visit(i, side, distMul, shift, lift = 0.22) {
-  const P = PL[i].p, R = PL[i].r, dist = R * distMul * (MOBILE ? 1.2 : 1);
+  const P = PL[i].p, R = PL[i].r;
+  // visible size including rings, so Saturn / Uranus fit on a narrow portrait screen
+  const RV = i === 5 ? R * 2.35 : i === 6 ? R * 1.8 : R;
+  const dist = MOBILE ? Math.max(R * distMul * 1.25, RV * 7.6) : R * distMul;
   const fwd = norm(mul(P, -1)), up = [0, 1, 0], right = norm(cross(fwd, up));
-  const eye = add(P, add(mul(right, side * dist * 0.85), add(mul(fwd, dist * 0.16), mul(up, dist * lift))));
+  // desktop: side-lit (dramatic day/night line); phones: mostly lit so the whole disc reads on a small screen
+  const sunward = MOBILE ? 0.75 : 0.16, across = MOBILE ? 0.6 : 0.85;
+  const eye = add(P, add(mul(right, side * dist * across), add(mul(fwd, dist * sunward), mul(up, dist * lift))));
   const view = norm(sub(P, eye)), camR = norm(cross(view, up)), camU = cross(camR, view);
-  const target = MOBILE ? add(P, mul(camU, -R * 1.3)) : add(P, mul(camR, shift * R));
+  // phones aim straight at the planet; the whole view is tilted in render() so it sits above the text
+  const target = MOBILE ? P : add(P, mul(camR, shift * R));
   return { eye, target };
 }
-const V = (u, v) => ({ u, eye: v.eye, target: v.target });
+const V = (u, v, hold = false) => ({ u, eye: v.eye, target: v.target, hold });
 // The whole solar-system leg as one spline. Close pairs of keys = gentle slow-downs
 // where a page is shown (speed never reaches zero, so motion never "stops").
 let SYS_KEYS = [];
@@ -94,14 +100,14 @@ export function setLayout(mobile) {
     { u: 0.44,   eye: add(mul(DEND, 95), [3, 1, 0]), target: vlerp([0, 0, 0], PL[7].p, 0.6) },
     V(0.475, visit(7, 1, 6.5, -0.6)),                         // Neptune
     V(0.52,  visit(6, -1, 6.5, 0.6)),                         // Uranus
-    V(0.575, visit(5, 1, 5.6, 1.6)),                          // Saturn  (Work)
-    V(0.645, visit(5, 1, 5.0, 1.7, 0.3)),
-    V(0.70,  visit(4, -1, 4.9, -1.6)),                        // Jupiter (Lab)
-    V(0.755, visit(4, -1, 4.4, -1.7, 0.3)),
+    V(0.575, visit(5, 1, 5.6, 1.6), true),                    // Saturn  (Work)
+    V(0.645, visit(5, 1, 5.0, 1.7, 0.3), true),
+    V(0.70,  visit(4, -1, 4.9, -1.6), true),                  // Jupiter (Lab)
+    V(0.755, visit(4, -1, 4.4, -1.7, 0.3), true),
     { u: 0.80, eye: [3.2, 0.55, 13.4], target: PL[3].p },     // asteroid belt
     V(0.845, visit(3, 1, 7.5, -0.5)),                         // Mars
-    V(0.905, visit(2, 1, 7.4, 1.7)),                          // Earth   (Contact)
-    V(1.0,   visit(2, 1, 6.2, 1.8, 0.3)),
+    V(0.905, visit(2, 1, 7.4, 1.7), true),                    // Earth   (Contact)
+    V(1.0,   visit(2, 1, 6.2, 1.8, 0.3), true),
   ];
 }
 setLayout(false);
@@ -364,20 +370,33 @@ float starDensity(vec3 p){
 void galaxyAt(vec3 p, out vec3 em, out float ext){
   float r = length(p.xz), ay = abs(p.y);
   float a = atan(p.z, p.x);
-  float ph = 2.0*a - log(max(r, 0.6))*7.0;
-  float n  = vnoise(p*0.45)*0.65 + vnoise(p*1.9 + 7.0)*0.35;
-  float arm  = pow(0.5 + 0.5*cos(ph + n*0.9), 6.0);
-  float lane = pow(0.5 + 0.5*cos(ph - 0.6), 12.0);
-  float n2 = fract(n*7.31 + hash13(floor(p*1.6)));   // cheap clumping for HII regions
-  float thick = exp(-ay/1.1), thin = exp(-ay/0.38);
-  float edge = 1.0 - smoothstep(80.0, 110.0, r);
-  float bulge = exp(-length(p*vec3(1.0,1.9,1.0))/4.5);
-  em  = vec3(1.0,0.84,0.66)*exp(-r/22.0)*thick*0.10
-      + vec3(0.58,0.72,1.0)*arm*thin*exp(-r/40.0)*(0.15+1.8*n*n)*1.3
-      + vec3(1.0,0.42,0.58)*arm*thin*smoothstep(0.74,0.93,n2)*exp(-r/40.0)*1.6
-      + vec3(1.0,0.80,0.56)*bulge*2.4;
+  // flocculent structure: the spiral phase is warped by turbulence at two scales
+  float nL = vnoise(p*0.085 + 19.0);                               // galaxy-scale turbulence
+  float n  = vnoise(p*0.42)*0.6 + vnoise(p*1.7 + 7.0)*0.4;
+  float nf = vnoise(p*1.7 + 3.0);                                  // star-forming clumps (visible from afar)
+  // arms wander, branch and break into segments instead of two perfect bands
+  float ph = 2.0*a - log(max(r, 0.6))*7.0 + (nL - 0.5)*2.8 + (n - 0.5)*1.3;
+  float seg = 0.3 + 1.4*smoothstep(0.25, 0.75, nL);
+  float arm  = pow(0.5 + 0.5*cos(ph), 4.0);                        // broad arm
+  float crest = pow(0.5 + 0.5*cos(ph), 16.0);                      // bright arm crest
+  float lane = pow(0.5 + 0.5*cos(ph - 0.55), 18.0);                // dust lane on the leading edge
+  float spur = pow(0.5 + 0.5*cos(ph*2.0 + n*4.5), 10.0)*0.35;      // feathery inter-arm spurs
+  float thick = exp(-ay/1.0), thin = exp(-ay/0.32);
+  float edge = 1.0 - smoothstep(76.0, 110.0, r);
+  float disk = exp(-r/24.0);
+  float bulge = exp(-length(p*vec3(1.0,1.8,1.0))/4.2);
+  vec2 bq = vec2(p.x*0.878 + p.z*0.479, (p.z*0.878 - p.x*0.479)*3.2);
+  float bar = exp(-length(bq)/7.0)*thick;                          // central bar
+  float hii  = smoothstep(0.64, 0.86, nf)*(crest + arm*0.4)*seg;   // pink star-forming knots
+  float blue = smoothstep(0.62, 0.80, nf*(1.0 - n) + n*0.25)*arm;  // young blue clusters
+  em  = vec3(1.0,0.78,0.52)*disk*thick*0.32                        // warm old-star glow between the arms
+      + vec3(0.34,0.55,1.0)*(arm*0.85 + crest*1.3 + spur*1.5)*seg*thin*exp(-r/46.0)*(0.35 + 1.5*n)
+      + vec3(1.0,0.24,0.48)*hii*thin*exp(-r/48.0)*9.0
+      + vec3(0.70,0.86,1.0)*blue*thin*exp(-r/48.0)*2.8
+      + vec3(1.0,0.74,0.44)*(bulge*1.9 + bar*0.6);                  // golden core + bar
   em *= edge;
-  ext = (lane*thin*3.2*(0.3 + n) + thin*0.12*n)*exp(-r/50.0)*edge;
+  ext = (lane*3.8*(0.4 + n) + spur*0.5 + 0.10*n)*thin*exp(-r/55.0)*edge
+      + lane*thick*0.3*exp(-r/40.0);
 }
 vec3 galaxyVol(vec3 ro, vec3 rd, out float trans, float N){
   trans = 1.0;
@@ -945,13 +964,14 @@ export function monotone(pts, x) {
   return (2*t3 - 3*t2 + 1) * pts[i][1] + (t3 - 2*t2 + t) * h * m[i] + (-2*t3 + 3*t2) * pts[i + 1][1] + (t3 - t2) * h * m[i + 1];
 }
 // C1 Catmull-Rom on a non-uniform knot, for 3D keys
-function spline3(keys, u, get) {
+function spline3(keys, u, get, holdZero = false) {
   const n = keys.length;
   if (u <= keys[0].u) return get(keys[0]);
   if (u >= keys[n - 1].u) return get(keys[n - 1]);
   let i = 0; while (u > keys[i + 1].u) i++;
   const k0 = keys[i], k1 = keys[i + 1], h = k1.u - k0.u, t = (u - k0.u) / h;
   const tan = j => {
+    if (holdZero && keys[j].hold) return [0, 0, 0];       // aim stays locked on the planet while its page shows
     const a = keys[Math.max(0, j - 1)], b = keys[Math.min(n - 1, j + 1)];
     return mul(sub(get(b), get(a)), h / (b.u - a.u));
   };
@@ -986,13 +1006,13 @@ export function spaceCamera(u) {
     // look at the galaxy (framed to the right of the page) → then at the Sun
     const toCore = norm(sub([0, 0, 0], eyeG));
     const right = norm(cross(toCore, [0, 1, 0]));
-    const coreAim = MOBILE ? [0, -34, 0] : add([0, 0, 0], mul(right, -42));   // galaxy beside / above the text
+    const coreAim = MOBILE ? [0, 0, 0] : add([0, 0, 0], mul(right, -36));   // galaxy beside / above the text
     const tgtG = vlerp(coreAim, PSUN, smooth(0.20, 0.37, u));
     const dir = norm(sub(tgtG, eyeG));
     return { eyeG, eyeS: mul(sub(eyeG, PSUN), K), dir, fov: lerp(44, 52, smooth(0.2, 0.42, u)) * D2R, dg };
   }
   const eyeS = spline3(SYS_KEYS, u, k => k.eye);
-  const tgtS = spline3(SYS_KEYS, u, k => k.target);
+  const tgtS = spline3(SYS_KEYS, u, k => k.target, true);
   return { eyeG: add(PSUN, mul(eyeS, 1 / K)), eyeS, dir: norm(sub(tgtS, eyeS)), fov: 52 * D2R, dg: Math.hypot(...eyeS) / K };
 }
 
@@ -1257,6 +1277,7 @@ export async function createBlackHole(canvas, opts = {}) {
       fs();
     } else {
       const cam = spaceCamera(s.u);
+      if (MOBILE) { const bt = basisDir(cam.dir, 0); cam.dir = norm(sub(cam.dir, mul(bt.y, 0.21))); }  // subject in the upper part on phones
       // gentle hand-held drift + pointer look-around (rotates the view, never the path)
       const look = [pointer[0] * 0.05 + (reducedMotion ? 0 : Math.sin(time * 0.21) * 0.006),
                     -pointer[1] * 0.035 + (reducedMotion ? 0 : Math.cos(time * 0.17) * 0.005)];
@@ -1271,7 +1292,7 @@ export async function createBlackHole(canvas, opts = {}) {
         gl.uniform2f(o.u.uRes, iw, ih); gl.uniform2f(o.u.uJitter, j[0], j[1]);
         gl.uniform1f(o.u.uTime, time); gl.uniform1f(o.u.uFrame, frame % 64);
         gl.uniform1f(o.u.uFade, s.fade ?? 1);
-        gl.uniform1f(o.u.uGal, 0.11);
+        gl.uniform1f(o.u.uGal, 0.14);
         // 3D star cells shrink as we zoom in, so there are always stars streaming past
         gl.uniform1f(o.u.uCell, Math.min(3.0, Math.max(0.02, cam.dg * 0.03)));
         gl.uniform3fv(o.u.uEyeG, cam.eyeG); gl.uniform3fv(o.u.uEyeS, cam.eyeS);

@@ -70,7 +70,7 @@ main{position:relative;z-index:1}
 @keyframes hint{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}50.1%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 
 /* ── the journey (galaxy → solar system) ──────────────── */
-#journey{height:2800vh}
+#journey{height:3100vh}
 .pages{position:fixed;inset:0;z-index:4;pointer-events:none}
 .panel{position:absolute;left:var(--pad);top:50%;width:min(88vw,520px);--o:0;
   transform:translate3d(0,calc(-50% + (1 - var(--o))*28px),0);opacity:var(--o);pointer-events:none}
@@ -124,7 +124,7 @@ main{position:relative;z-index:1}
 /* ══ DEDICATED MOBILE LAYOUT (html.mobile is set by JS on phones/tablets) ══ */
 html.mobile{--pad:20px}
 html.mobile #hole{height:320vh}
-html.mobile #journey{height:2300vh}
+html.mobile #journey{height:2600vh}
 html.mobile .menu{display:block}
 html.mobile .nav{position:fixed;inset:0;z-index:-1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 var(--pad);
   background:rgba(0,0,0,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
