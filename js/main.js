@@ -83,6 +83,22 @@ const hudDist = $('#hudDist'), hudTime = $('#hudTime'), hudBar = $('#hudBar');
 const btName = $('#btName'), btInfo = $('#btInfo');
 const holeSec = $('#hole'), journeySec = $('#journey');
 
+// ── idle scroll cue (right side): fades in when you stop, vanishes when you scroll.
+//    At the very end it turns into "Back to top".
+const cue = document.createElement('button');
+cue.className = 'scrollcue'; cue.type = 'button'; cue.setAttribute('aria-label', 'Scroll');
+cue.innerHTML = '<span class="sc-txt"><b class="sc-down">Scroll</b><b class="sc-up">Back to top</b></span>'
+  + '<span class="sc-track"><i></i></span>'
+  + '<svg class="sc-arrow" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+cue.addEventListener('click', () => {
+  if (cue.classList.contains('at-end')) scrollTo({ top: 0, behavior: 'smooth' });
+  else scrollBy({ top: innerHeight * 0.9, behavior: 'smooth' });
+});
+document.body.appendChild(cue);
+let lastScrollAt = performance.now(), cueShown = false, cueTop = false;
+const markScroll = () => { lastScrollAt = performance.now(); };
+['scroll', 'wheel', 'touchmove', 'keydown'].forEach(ev => addEventListener(ev, markScroll, { passive: true }));
+
 // ── layout cache (never read layout inside the frame loop)
 let L = {};
 function measure() {
@@ -220,6 +236,12 @@ function loop(now) {
   }
   if (lab && lab[2] !== shownLabel) { shownLabel = lab[2]; btName.textContent = lab[2]; btInfo.textContent = lab[3]; }
   css('--bt', (bt * (active >= 0 ? 0.6 : 1)).toFixed(3));
+  // scroll cue: only after ~1.2 s of stillness, never on the landing (it has its own hint) or with the menu open
+  const atEnd = scrollY >= L.max - 4;
+  const cueOn = performance.now() - lastScrollAt > 1200 && Math.abs(spring.v) < 2 && root.classList.contains('ready')
+    && ui.title < 0.05 && !root.classList.contains('menu-open');
+  if (cueOn !== cueShown) { cueShown = cueOn; cue.classList.toggle('on', cueOn); }
+  if (atEnd !== cueTop) { cueTop = atEnd; cue.classList.toggle('at-end', atEnd); cue.setAttribute('aria-label', atEnd ? 'Back to top' : 'Scroll'); }
   hudBar.style.transform = `scaleY(${clamp01(spring.x / L.max).toFixed(4)})`;
   requestAnimationFrame(loop);
 }
