@@ -25,7 +25,7 @@ const PAGES = [
     body: 'I’m Vedant, a creative developer. I design and build websites, apps and software that feel alive: fast, beautiful and made to be remembered.' },
   { nav: 'Work', at: [0.575, 0.655], side: 'right', kicker: 'Selected work',
     title: 'Things I’ve<br><em>created.</em>',
-    list: [['Event Horizon', 'Website · 2026'], ['Infinity Castle Portfolio', 'Website · 2025'], ['Pocket Universe', 'App · 2025'], ['Stardust Studio', 'Software · 2024']] },
+    list: [['Event Horizon', 'Website · 2026'], ['Infinity Castle Portfolio', 'Website · 2026'], ['Pocket Universe', 'App · 2026'], ['Stardust Studio', 'Software · 2026']] },
   { nav: 'Lab', at: [0.70, 0.765], side: 'left', kicker: 'Lab',
     title: 'Experiments<br><em>& craft.</em>',
     body: 'Where I experiment. What I build with:',
