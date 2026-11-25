@@ -50,6 +50,26 @@ const MOBILE = qs.get('m') === '1' || (qs.get('m') !== '0' &&
   (matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600));
 root.classList.toggle('mobile', MOBILE);
 
+// ── auto fullscreen on the first click / tap / key press (browsers require a user gesture).
+//    Runs once: if the visitor leaves fullscreen (Esc), we never force it again. Opt out with ?fs=0.
+//    iPhone Safari has no fullscreen API for pages, so there it simply does nothing.
+(() => {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req || qs.get('fs') === '0' || window.matchMedia('(display-mode: fullscreen)').matches) return;
+  const events = ['click', 'touchend', 'keydown'];
+  const go = e => {
+    if (e.type === 'keydown' && (e.key === 'Escape' || e.metaKey || e.ctrlKey || e.altKey)) return;
+    events.forEach(ev => removeEventListener(ev, go, true));
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    try {
+      const r = req.call(el, { navigationUI: 'hide' });
+      if (r && r.catch) r.catch(() => {});          // denied / unsupported → stay windowed, no error
+    } catch (_) {}
+  };
+  events.forEach(ev => addEventListener(ev, go, { capture: true, passive: true }));
+})();
+
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 scrollTo(0, 0);
 
